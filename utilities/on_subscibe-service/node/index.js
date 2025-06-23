@@ -3,15 +3,19 @@ const express = require('express'); // Express framework for handling HTTP reque
 const bodyParser = require('body-parser'); // Middleware for parsing request bodies
 const crypto = require('crypto'); // Node.js crypto module for encryption and decryption
 const _sodium = require('libsodium-wrappers');
+const nacl = require("tweetnacl");
+const crypto = require("crypto");
+
 
 const port = 3000; // Port on which the server will listen
 const ENCRYPTION_PRIVATE_KEY =
-  'MC4CAQEwBQYDK2VuBCIEILgcht9h660ZeO36tG+QuHGNcLN9JuAzxHWZl09f57Bh';
+  'MC4CAQAwBQYDK2VuBCIEICC57vW/fHO2BF+pm3JUwZ0SRYoKPuL7m9JhTcXX1UxN';
 const ONDC_PUBLIC_KEY =
-  'MCowBQYDK2VuAyEAlKHWJWiEiHFGlAJ6TE4VMGaeQUYg5DHEpuQdiq6flnQ=';
-const REQUEST_ID = '6a6abf53-674f-4d6d-a52b-62e3fda55e04';
+  'MCowBQYDK2VuAyEAa9Wbpvd9SsrpOZFcynyt/TO3x0Yrqyys4NUGIvyxX2Q=';
+const REQUEST_ID = '3dc51b1e-ccad-4da2-a3e2-d61b4d7383b2';
 const SIGNING_PRIVATE_KEY =
-  '7M2L3q9y5gS/dq21Ly3Y3VtYEwgmGM1tM4n0wce/WgcJcOzvdfKo+AUEulIyQCawS39dc6uicu8NAaEpciPajg==';
+  'U30ldY27I4TBB+/kihfNoj4Ukq+wNPIm0SzXXmDuc7yS6478QWvFuvYTLGZE14+gns6hSw93UIL7rzVgVYBmqw==';
+
 
 const htmlFile = `
 <!--Contents of ondc-site-verification.html. -->
@@ -97,3 +101,39 @@ async function signMessage(signingString, privateKey) {
   );
   return signature;
 }
+
+
+function generateKeyPairs() {
+  const signingKeyPair = nacl.sign.keyPair();
+  const { privateKey, publicKey } = crypto.generateKeyPairSync('x25519', {
+    modulusLength: 2048,
+    publicKeyEncoding: {
+      type: 'spki',
+      format: 'pem',
+    },
+    privateKeyEncoding: {
+      type: 'pkcs8',
+      format: 'pem',
+    },
+  });
+
+  return {
+    Signing_private_key: Buffer.from(signingKeyPair.secretKey).toString(
+      "base64"
+    ),
+    Signing_public_key: Buffer.from(signingKeyPair.publicKey).toString(
+      "base64"
+    ),
+    Encryption_Privatekey: privateKey.toString('utf-8')
+      .replace(/-----BEGIN PRIVATE KEY-----/, '')
+      .replace(/-----END PRIVATE KEY-----/, '')
+      .replace(/\s/g, ''),
+    Encryption_Publickey: publicKey.toString('utf-8')
+      .replace(/-----BEGIN PUBLIC KEY-----/, '')
+      .replace(/-----END PUBLIC KEY-----/, '')
+      .replace(/\s/g, ''),
+  };
+}
+
+const keyPairs = generateKeyPairs();
+console.log(keyPairs);

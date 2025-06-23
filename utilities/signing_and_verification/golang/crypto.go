@@ -237,19 +237,14 @@ func getRequestBody() ([]byte, error) {
 	return payload, nil
 }
 
-func getAuthHeader() (string, error) {
+func getAuthHeader(payload []byte) (string, error) {
 	var authHeader string
-
-	payload, err := getRequestBody()
-	if err != nil {
-		return authHeader, err
-	}
 
 	privateKey := os.Getenv("PRIVATE_KEY")
 	currentTime := int(time.Now().Unix())
 
-	//ttl we are using is 30 seconds
-	ttl := 30
+	//ttl we are using is 3600 seconds (1 hour)
+	ttl := 3600
 
 	signature, err := signRequest(privateKey, payload, currentTime, ttl)
 	if err != nil {
@@ -271,12 +266,7 @@ func getAuthHeader() (string, error) {
 	return authHeader, nil
 }
 
-func verifyRequest(authHeader string) bool {
-
-	payload, err := getRequestBody()
-	if err != nil {
-		return false
-	}
+func verifyRequest(authHeader string, payload []byte) bool {
 
 	publicKey := os.Getenv("PUBLIC_KEY")
 
@@ -405,13 +395,23 @@ func main() {
 		fmt.Println("Crypto_Privatekey:", encPrivateKey)
 		fmt.Println("Crypto_Publickey:", encPublicKey)
 	case "create_authorisation_header":
-		authHeader, err := getAuthHeader()
+		payload, err := getRequestBody()
+		if err != nil {
+			fmt.Println("Could not read request body")
+			return
+		}
+		authHeader, err := getAuthHeader(payload)
 		if err == nil {
 			fmt.Println(authHeader)
 		}
 	case "verify_authorisation_header":
 		authHeader := args[1]
-		fmt.Println(verifyRequest(authHeader))
+		payload, err := getRequestBody()
+		if err != nil {
+			fmt.Println("Could not read request body")
+			return
+		}
+		fmt.Println(verifyRequest(authHeader, payload))
 	case "encrypt":
 		privateKey := args[1]
 		publicKey := args[2]
